@@ -71,7 +71,8 @@ def build_model_viewer_html(save_folder, height=660, width=790, textured=False):
     with open(output_html_path, 'w') as f:
         f.write(template_html.replace('<model-viewer>', obj_html))
 
-    iframe_tag = f'<iframe src="/static/{output_html_path}" height="{height}" width="100%" frameborder="0"></iframe>'
+    static_html_path = output_html_path.replace('gradio_cache', 'static')
+    iframe_tag = f'<iframe src="{static_html_path}" height="{height}" width="100%" frameborder="0"></iframe>'
     print(f'Find html {output_html_path}, {os.path.exists(output_html_path)}')
 
     return f"""
@@ -338,7 +339,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=8080)
+    parser.add_argument('--port', type=int, default=8000)
     parser.add_argument('--cache-path', type=str, default='./gradio_cache')
     parser.add_argument('--enable_t23d', action='store_true')
     args = parser.parse_args()
@@ -390,12 +391,14 @@ if __name__ == '__main__':
 
     # https://discuss.huggingface.co/t/how-to-serve-an-html-file/33921/2
     # create a FastAPI app
-    app = FastAPI()
+    from gradio_fastapi import gradio_lifespan_init
+    app = FastAPI(lifespan=gradio_lifespan_init())
     # create a static directory to store the static files
-    static_dir = Path('./gradio_cache')
+    static_dir = Path(SAVE_DIR)
     static_dir.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     demo = build_app()
     app = gr.mount_gradio_app(app, demo, path="/")
     uvicorn.run(app, host="0.0.0.0", port=args.port)
+    # demo.launch(share=True, allowed_paths=['gradio_cache'])

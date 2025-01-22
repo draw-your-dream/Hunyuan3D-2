@@ -29,5 +29,6 @@ onnxruntime
 pygltflib
 sentencepiece
 gradio
+gradio-fastapi
 fastapi
 uvicorn
